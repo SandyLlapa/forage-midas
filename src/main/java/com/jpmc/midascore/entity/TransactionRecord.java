@@ -23,12 +23,15 @@ public class TransactionRecord {
     private  float amount;
 
     @Column(nullable = false)
+    private float incentiveAmount;
+
+    @Column(nullable = false)
     private boolean isValid;
 
     protected TransactionRecord() {
     }
 
-        public TransactionRecord(UserRecord sender, UserRecord recipient, float amount, boolean isValid) {
+        public TransactionRecord(UserRecord sender, UserRecord recipient, float amount, float incentiveAmount, boolean isValid) {
         this.sender = sender;
         this.recipient=recipient;
         this.amount =  amount;

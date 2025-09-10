@@ -1,6 +1,7 @@
 package com.jpmc.midascore.component;
 import com.jpmc.midascore.entity.TransactionRecord;
 import com.jpmc.midascore.entity.UserRecord;
+import com.jpmc.midascore.foundation.Transaction;
 import com.jpmc.midascore.repository.TransactionRepository;
 import com.jpmc.midascore.repository.UserRepository;
 import org.springframework.stereotype.Component;
@@ -14,10 +15,12 @@ public class TransactionService {
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final IncentiveService incentiveService;
 
-    public TransactionService(UserRepository userRepository, TransactionRepository transactionRepository){
+    public TransactionService(UserRepository userRepository, TransactionRepository transactionRepository, IncentiveService incentiveService){
         this.userRepository=userRepository;
         this.transactionRepository=transactionRepository;
+        this.incentiveService = incentiveService;
 
     }
 
@@ -36,13 +39,24 @@ public class TransactionService {
         // VALIDATE TRANSACTION
         boolean isValid = isValidTransaction(sender, recipient,amount);
 
-        if (isValid && sender!=null && recipient !=null) {
-            TransactionRecord transaction = new TransactionRecord(sender, recipient, amount, true);
+        Transaction apiTransaction = new Transaction(senderId,recipientId,amount);
+        float incentiveAmount = incentiveService.getIncentiveAmount(apiTransaction);
+
+        logger.info("****  INCENTIVE AMOUNT: ${} ****", incentiveAmount);
+
+
+        if (sender != null && recipient != null) {
+            TransactionRecord transaction = new TransactionRecord(
+                    sender, recipient, amount, incentiveAmount, isValid
+            );
             transactionRepository.save(transaction);
+        }
+
+        if (isValid && sender!=null && recipient !=null) {
 
 
             sender.setBalance((sender.getBalance() - amount));
-            recipient.setBalance((recipient.getBalance() + amount));
+            recipient.setBalance((recipient.getBalance() + amount +incentiveAmount));
 
             userRepository.save(sender);
             userRepository.save(recipient);
@@ -71,15 +85,9 @@ public class TransactionService {
         return !(sender.getBalance() < amount);
     }
 
-    public void printUserBalance(String username) {
+    public float getBalanceByUsername(String username) {
         UserRecord user = userRepository.findByName(username);
-        if (user != null) {
-            logger.info("User {} balance: ${}", username, user.getBalance());
-        } else {
-            logger.warn("User {} not found", username);
-        }
+        return user != null ? user.getBalance() : 0f;
     }
-
-
 
 }
