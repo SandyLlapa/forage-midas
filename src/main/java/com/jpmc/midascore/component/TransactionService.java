@@ -90,4 +90,9 @@ public class TransactionService {
         return user != null ? user.getBalance() : 0f;
     }
 
+    public float getBalanceByUserId(long userId){
+        UserRecord user = userRepository.findById(userId);
+        return user !=  null ? user.getBalance() : 0f;
+    }
+
 }
